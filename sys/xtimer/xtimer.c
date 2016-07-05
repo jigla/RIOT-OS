@@ -66,6 +66,7 @@ void xtimer_periodic_wakeup(uint32_t *last_wakeup, uint32_t period) {
     timer.arg = (void*) &mutex;
 
     uint32_t target = (*last_wakeup) + period;
+
     uint32_t now = xtimer_now();
     /* make sure we're not setting a value in the past */
     if (now < (*last_wakeup)) {
@@ -101,6 +102,7 @@ void xtimer_periodic_wakeup(uint32_t *last_wakeup, uint32_t period) {
      * tl;dr Don't return too early!
      */
     uint32_t offset = target - now;
+
     DEBUG("xps, now: %9" PRIu32 ", tgt: %9" PRIu32 ", off: %9" PRIu32 "\n", now, target, offset);
     if (offset < XTIMER_PERIODIC_SPIN) {
         xtimer_spin(offset);
