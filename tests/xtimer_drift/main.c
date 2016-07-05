@@ -79,7 +79,7 @@ void *slacker_thread(void *arg)
 
         tmsg->msg.type = 12345;
         tmsg->msg.content.ptr = tmsg;
-        xtimer_set_msg(&tmsg->timer, xtimer_ticks_from_usec(tmsg->interval), &tmsg->msg, thread_getpid());
+        xtimer_set_msg(&tmsg->timer, tmsg->interval, &tmsg->msg, thread_getpid());
     }
 }
 
@@ -192,7 +192,7 @@ int main(void)
 
     xtimer_ticks32_t last_wakeup = xtimer_now();
     while (1) {
-        xtimer_periodic_wakeup(&last_wakeup, xtimer_ticks_from_usec(TEST_INTERVAL));
+        xtimer_periodic_wakeup(&last_wakeup, TEST_INTERVAL);
         msg_try_send(&m, pid3);
     }
 }
