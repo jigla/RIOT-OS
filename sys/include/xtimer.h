@@ -208,7 +208,7 @@ static inline void xtimer_periodic_wakeup(xtimer_ticks32_t *last_wakeup, uint32_
  * @param[in] msg           ptr to msg that will be sent
  * @param[in] target_pid    pid the message will be sent to
  */
-static inline void xtimer_set_msg(xtimer_t *timer, xtimer_ticks32_t offset, msg_t *msg, kernel_pid_t target_pid);
+static inline void xtimer_set_msg(xtimer_t *timer, uint32_t offset, msg_t *msg, kernel_pid_t target_pid);
 
 /**
  * @brief Set a timer that sends a message, 64bit version
@@ -226,7 +226,7 @@ static inline void xtimer_set_msg(xtimer_t *timer, xtimer_ticks32_t offset, msg_
  * @param[in] msg           ptr to msg that will be sent
  * @param[in] target_pid    pid the message will be sent to
  */
-static inline void xtimer_set_msg64(xtimer_t *timer, xtimer_ticks64_t offset, msg_t *msg, kernel_pid_t target_pid);
+static inline void xtimer_set_msg64(xtimer_t *timer, uint64_t offset, msg_t *msg, kernel_pid_t target_pid);
 
 /**
  * @brief Set a timer that wakes up a thread
@@ -240,7 +240,7 @@ static inline void xtimer_set_msg64(xtimer_t *timer, xtimer_ticks64_t offset, ms
  * @param[in] offset        microseconds from now
  * @param[in] pid           pid of the thread that will be woken up
  */
-static inline void xtimer_set_wakeup(xtimer_t *timer, xtimer_ticks32_t offset, kernel_pid_t pid);
+static inline void xtimer_set_wakeup(xtimer_t *timer, uint32_t offset, kernel_pid_t pid);
 
 /**
  * @brief Set a timer that wakes up a thread, 64bit version
@@ -254,7 +254,7 @@ static inline void xtimer_set_wakeup(xtimer_t *timer, xtimer_ticks32_t offset, k
  * @param[in] offset        microseconds from now
  * @param[in] pid           pid of the thread that will be woken up
  */
-static inline void xtimer_set_wakeup64(xtimer_t *timer, xtimer_ticks64_t offset, kernel_pid_t pid);
+static inline void xtimer_set_wakeup64(xtimer_t *timer, uint64_t offset, kernel_pid_t pid);
 
 /**
  * @brief Set a timer to execute a callback at some time in the future
@@ -274,7 +274,7 @@ static inline void xtimer_set_wakeup64(xtimer_t *timer, xtimer_ticks64_t offset,
  * @param[in] offset    time in ticks from now specifying that timer's
  *                      callback's execution time
  */
-static inline void xtimer_set(xtimer_t *timer, xtimer_ticks32_t offset);
+static inline void xtimer_set(xtimer_t *timer, uint32_t offset);
 
 /**
  * @brief remove a timer
@@ -288,24 +288,24 @@ void xtimer_remove(xtimer_t *timer);
 /**
  * @brief receive a message blocking but with timeout
  *
- * @param[out]  msg     pointer to a msg_t which will be filled in case of
+ * @param[out] msg      pointer to a msg_t which will be filled in case of
  *                      no timeout
- * @param[in]   ticks   timeout in microseconds relative
+ * @param[in]  timeout  timeout in microseconds relative
  *
- * @return       < 0 on error, other value otherwise
+ * @return     < 0 on error, other value otherwise
  */
-static inline int xtimer_msg_receive_timeout(msg_t *msg, xtimer_ticks32_t ticks);
+static inline int xtimer_msg_receive_timeout(msg_t *msg, uint32_t timeout);
 
 /**
  * @brief receive a message blocking but with timeout, 64bit version
  *
- * @param[out]   msg    pointer to a msg_t which will be filled in case of no
+ * @param[out] msg      pointer to a msg_t which will be filled in case of no
  *                      timeout
- * @param[in]    ticks   timeout in microseconds relative
+ * @param[in]  timeout  timeout in microseconds relative
  *
- * @return       < 0 on error, other value otherwise
+ * @return     < 0 on error, other value otherwise
  */
-static inline int xtimer_msg_receive_timeout64(msg_t *msg, xtimer_ticks64_t ticks);
+static inline int xtimer_msg_receive_timeout64(msg_t *msg, uint64_t timeout);
 
 /**
  * @brief Convert microseconds to xtimer ticks
