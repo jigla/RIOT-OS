@@ -486,6 +486,11 @@ int _open_connection(char *name, char* option)
     }
 }
 
+void _write_preamble(int fd)
+{
+  char preamble[8] = {0xFF, 0x5d, 0x07, 0xdf, 0x96, 0x04, 0x25, 0x4c};
+  checked_write(fd, preamble, 8);
+}
 int main(int argc, char *argv[])
 {
     char inbuf[MTU];
@@ -573,6 +578,7 @@ int main(int argc, char *argv[])
                                 }
                                 break;
                             case LINE_FRAME_TYPE_L7G:
+                               _write_preamble(l7g_fd);
                                checked_write(l7g_fd, serial.frame, serial.framebytes);
                                break;
 
