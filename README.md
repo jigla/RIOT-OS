@@ -10,6 +10,7 @@ The v3.1 branch contains:
 - hamilton-at30ts74 (the temperature sensor)
 - hamilton-mma7660 (the accelerometer)
 - hamilton-l7g (modifications to ethos)
+- fix-samr21e (PR #5861 open upstream)
 
 If you want to contribute, please consider contributing upstream. If that is
 not appropriate (you have hamilton-specific changes) please submit a PR
