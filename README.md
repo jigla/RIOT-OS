@@ -1,3 +1,23 @@
+# Hamilton-combined v3.1 - September 22nd 2016
+
+Board support for the Hamilton mote is maintained as a set of rebasing branches
+that will at some stage be pushed upstream. At intervals, a "combined" branch
+is created so that working with the hamilton is as easy as cloning this repo.
+The v3.1 branch contains:
+
+- hamilton-board
+- hamilton-rtt-stdio (PR #5851 open upstream)
+- hamilton-at30ts74 (the temperature sensor)
+- hamilton-mma7660 (the accelerometer)
+- hamilton-l7g (modifications to ethos)
+
+If you want to contribute, please consider contributing upstream. If that is
+not appropriate (you have hamilton-specific changes) please submit a PR
+as changes on top of master (which will track upstream) as this makes rebasing
+easier. It is ok if your PR does not compile without some of the hamilton-*
+branches merged in. Your PR will then appear in the next hamilton-combined
+release.
+
                           ZZZZZZ
                         ZZZZZZZZZZZZ
                       ZZZZZZZZZZZZZZZZ
@@ -27,7 +47,7 @@
 The friendly Operating System for IoT!
 
 RIOT is a real-time multi-threading operating system that supports a range of
-devices that are typically found in the Internet of Things (IoT): 
+devices that are typically found in the Internet of Things (IoT):
 8-bit, 16-bit and 32-bit microcontrollers.
 
 RIOT is based on the following design principles: energy-efficiency, real-time
