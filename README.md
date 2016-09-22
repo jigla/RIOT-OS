@@ -12,6 +12,11 @@ The v3.1 branch contains:
 - hamilton-l7g (modifications to ethos)
 - fix-samr21e (PR #5861 open upstream)
 
+These are not automatically included, but you may want to pull them in:
+
+- upstream-pr-5608 (adds ticks-based xtimer)
+- hamilton-lowpower (switches everything to low power)
+
 If you want to contribute, please consider contributing upstream. If that is
 not appropriate (you have hamilton-specific changes) please submit a PR
 as changes on top of master (which will track upstream) as this makes rebasing
