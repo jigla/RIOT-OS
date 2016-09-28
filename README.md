@@ -25,6 +25,9 @@ git merge --no-ff origin/hamilton-lp-patches
 git push --set-upstream hamilton-combined-v4.1
 ```
 
+Then this readme was added, and also I re-pulled hamilton-board because I messed
+something up there.
+
 If you want to contribute, please consider contributing upstream. If that is
 not appropriate (you have hamilton-specific changes) please submit a PR
 as changes on top of master (which will track upstream) as this makes rebasing
