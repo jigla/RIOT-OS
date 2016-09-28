@@ -103,7 +103,7 @@ void _xtimer_periodic_wakeup(uint32_t *last_wakeup, uint32_t period) {
     uint32_t offset = target - now;
     DEBUG("xps, now: %9" PRIu32 ", tgt: %9" PRIu32 ", off: %9" PRIu32 "\n", now, target, offset);
     if (offset < XTIMER_PERIODIC_SPIN) {
-        xtimer_spin(offset);
+        _xtimer_spin(offset);
     }
     else {
         if (offset < XTIMER_PERIODIC_RELATIVE) {
@@ -112,7 +112,7 @@ void _xtimer_periodic_wakeup(uint32_t *last_wakeup, uint32_t period) {
              *
              * Since interrupts are normally enabled inside this function, this time may
              * be undeterministic. */
-            target = xtimer_now() + offset;
+            target = _xtimer_now() + offset;
         }
         mutex_lock(&mutex);
         DEBUG("xps, abs: %" PRIu32 "\n", target);
