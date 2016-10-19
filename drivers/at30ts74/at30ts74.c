@@ -7,18 +7,18 @@
  * directory for more details.
  */
 
- /**
-  * @ingroup     drivers_at30ts74
-  * @{
-  *
-  * @file
-  * @brief       Driver for the AT30TS74 ±1°C Accurate, 12-Bit Digital I2C
-  *              Temperature Sensor from Atmel
-  *
-  * @author      Michael Andersen <m.andersen@cs.berkeley.edu>
-  *
-  * @}
-  */
+/**
+ * @ingroup     drivers_at30ts74
+ * @{
+ *
+ * @file
+ * @brief       Driver for the AT30TS74 ±1°C Accurate, 12-Bit Digital I2C
+ *              Temperature Sensor from Atmel
+ *
+ * @author      Michael Andersen <m.andersen@cs.berkeley.edu>
+ *
+ * @}
+ */
 
 #include "at30ts74.h"
 #include "periph/i2c.h"
@@ -26,8 +26,6 @@
 
 #define ENABLE_DEBUG    (0)
 #include "debug.h"
-
-
 
 #define CFG_BITS_SHIFT 5
 #define REG_TMP_ADDR   0x00
@@ -40,7 +38,7 @@ int at30ts74_init(at30ts74_t *dev, i2c_t i2c, uint8_t address, uint8_t bits) {
     char tmp;
 
     if (bits > AT30TS74_12BIT) {
-      return -1;
+        return -1;
     }
 
     // initialize device descriptor
@@ -80,7 +78,7 @@ int at30ts74_read(at30ts74_t *dev, int32_t *result)
 
     // Start the sample process
     ret = i2c_write_reg(dev->i2c, dev->address, REG_CFG_ADDR,
-      (dev->bits << CFG_BITS_SHIFT) | CFG_SHDWN | CFG_ONESHOT);
+        (dev->bits << CFG_BITS_SHIFT) | CFG_SHDWN | CFG_ONESHOT);
 
     // Wait for the sample process to finish
     i2c_release(dev->i2c);
@@ -94,8 +92,8 @@ int at30ts74_read(at30ts74_t *dev, int32_t *result)
         return -1;
     }
     ret = (int16_t)(((uint16_t)res[0] << 8) | res[1]);
-    // Calculate and return actual temperature value in C * 10000
 
+    // Calculate and return actual temperature value in C * 10000
     *result = (int32_t)(ret >> 4) * 625;
     DEBUG("AT30TS74: Raw value: %d - high: %u, low: %u\n", *result, res[0], res[1]);
     return 0;
