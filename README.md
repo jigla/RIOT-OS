@@ -1,3 +1,47 @@
+# Hamilton-combined v5.0 - October 19th 2016
+
+Board support for the Hamilton mote is maintained as a set of rebasing branches
+that will at some stage be pushed upstream. At intervals, a "combined" branch
+is created so that working with the hamilton is as easy as cloning this repo.
+The v5.0 branch was created with the following commands
+
+```bash
+git clone https://github.com/hamilton-mote/RIOT-OS.git
+cd RIOT-OS
+git remote add upstream https://github.com/RIOT-OS/RIOT.git
+git checkout origin/master # this was ff2f998
+git checkout -b hamilton-combined-v5.0
+git fetch upstream pull/5608/head:pr-5608
+git fetch upstream pull/5971/head:pr-5971
+git fetch upstream pull/5970/head:pr-5970
+git fetch upstream pull/5969/head:pr-5969
+git fetch upstream pull/5968/head:pr-5968
+git merge --no-ff pr-5608
+git merge --no-ff pr-5971
+git merge --no-ff pr-5670
+git merge --no-ff pr-5969
+git merge --no-ff pr-5968
+git merge --no-ff origin/hamilton-board
+# we are now at 025b624f2efabf0e3ecf1d7939bb27cd5bdbc7dc
+# this one is very fragile by nature and is rebased on top of the
+# combined branch itself. Basically it includes misc low power changes
+# that are not ready for upstreaming
+git merge --no-ff origin/hamilton-lp-patches
+git push --set-upstream hamilton-combined-v5.0
+```
+
+Then this readme was added
+
+If you want to contribute, please consider contributing upstream. If that is
+not appropriate (you have hamilton-specific changes) please submit a PR
+as changes on top of master (which will track upstream) as this makes rebasing
+easier. If that is not possible (you are editing hamilton-specific files) you
+can base your PR on a combined branch, but please make clear which version
+you used. We recommend including this information in your branches, such as
+`c5.0-my-feature`.
+
+Upstream readme:
+
                           ZZZZZZ
                         ZZZZZZZZZZZZ
                       ZZZZZZZZZZZZZZZZ
@@ -27,7 +71,7 @@
 The friendly Operating System for IoT!
 
 RIOT is a real-time multi-threading operating system that supports a range of
-devices that are typically found in the Internet of Things (IoT): 
+devices that are typically found in the Internet of Things (IoT):
 8-bit, 16-bit and 32-bit microcontrollers.
 
 RIOT is based on the following design principles: energy-efficiency, real-time
