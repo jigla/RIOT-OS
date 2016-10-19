@@ -141,14 +141,12 @@ void at86rf2xx_assert_awake(at86rf2xx_t *dev)
 
 void at86rf2xx_hardware_reset(at86rf2xx_t *dev)
 {
-    /* wake up from sleep in case radio is sleeping */
-    at86rf2xx_assert_awake(dev);
-
     /* trigger hardware reset */
     gpio_clear(dev->params.reset_pin);
     xtimer_usleep(AT86RF2XX_RESET_PULSE_WIDTH);
     gpio_set(dev->params.reset_pin);
     xtimer_usleep(AT86RF2XX_RESET_DELAY);
+    dev->state = AT86RF2XX_STATE_P_ON;
 }
 
 void at86rf2xx_configure_phy(at86rf2xx_t *dev)
