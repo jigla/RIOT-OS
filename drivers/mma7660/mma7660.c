@@ -123,7 +123,7 @@ int mma7660_config_pd(mma7660_t *dev, uint8_t pd) {
 }
 
 int mma7660_init(mma7660_t *dev, i2c_t i2c, uint8_t address) {
-    // write device descriptor
+    /* write device descriptor */
     dev->i2c = i2c;
     dev->addr = address;
 

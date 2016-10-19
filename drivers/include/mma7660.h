@@ -47,7 +47,7 @@ typedef struct
 #define MODE_AUTOWAKE_SHIFT  3
 #define MODE_AUTOSLEEP_SHIFT 4
 #define MODE_PRESCALE_SHIFT  5
-#define MODE_INTERRUPT_DEFAULT 0x40 //Active low, push-pull
+#define MODE_INTERRUPT_DEFAULT 0x40 /* Active low, push-pull */
 
 #define MMA7660_INTSOURCE_NONE        0x00
 #define MMA7660_INTSOURCE_FB          0x01
