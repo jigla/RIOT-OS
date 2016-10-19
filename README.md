@@ -30,7 +30,9 @@ git merge --no-ff origin/hamilton-lp-patches
 git push --set-upstream hamilton-combined-v5.0
 ```
 
-Then this readme was added
+Then this readme was added. As usual, some things slipped through
+the cracks and broke everything, so I remerged hamilton-board and pr-5971
+to fix that.
 
 If you want to contribute, please consider contributing upstream. If that is
 not appropriate (you have hamilton-specific changes) please submit a PR
