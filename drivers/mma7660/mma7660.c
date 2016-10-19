@@ -146,7 +146,7 @@ int mma7660_read(mma7660_t *dev, int8_t *x, int8_t *y, int8_t *z)
     int retries = 6;
     char t;
     i2c_acquire(dev->i2c);
-    
+
     while (retries > 0) {
         if (i2c_read_reg(dev->i2c, dev->addr, MMA7660_XOUT, &t) != 1) {
             i2c_release(dev->i2c);
