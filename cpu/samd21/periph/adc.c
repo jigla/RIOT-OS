@@ -52,7 +52,7 @@ int adc_init(adc_t channel) {
     uint32_t linearity = (*((uint32_t *) ADC_FUSES_LINEARITY_0_ADDR) & ADC_FUSES_LINEARITY_0_Msk) >> ADC_FUSES_LINEARITY_0_Pos;
     linearity |= ((*((uint32_t *) ADC_FUSES_LINEARITY_1_ADDR) & ADC_FUSES_LINEARITY_1_Msk) >> ADC_FUSES_LINEARITY_1_Pos) << 5;
 
-    ADC->CALIB.reg = ADC_CALIB_BIAS_CAL(bias) | ADC_CALIB_LINEARITY_CAL(linearity);
+    ADC_DEV->CALIB.reg = ADC_CALIB_BIAS_CAL(bias) | ADC_CALIB_LINEARITY_CAL(linearity);
 
     /* Set RUN_IN_STANDBY */
     ADC_DEV->CTRLA.bit.RUNSTDBY = 0;
@@ -72,7 +72,7 @@ int adc_init(adc_t channel) {
     /* Configure CTRLB Register HERE IS THE RESOLUTION SET!*/
     ADC_DEV->CTRLB.bit.DIFFMODE  = 0;
     ADC_DEV->CTRLB.bit.FREERUN   = 0;
-    ADC_DEV->CTRLB.bit.CORREN    = 1;
+    ADC_DEV->CTRLB.bit.CORREN    = 0;
     ADC_DEV->CTRLB.bit.LEFTADJ   = 0; // Left-adjusted results
     ADC_DEV->CTRLB.bit.RESSEL    = ADC_CTRLB_RESSEL_12BIT_Val;
     ADC_DEV->CTRLB.bit.PRESCALER = ADC_CTRLB_PRESCALER_DIV256_Val;
