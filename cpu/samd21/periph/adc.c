@@ -34,8 +34,6 @@
 
 int adc_init(adc_t channel) {
 
-
-
     /*  Disable ADC Module before init. */
     ADC_DEV->CTRLA.bit.ENABLE = 0;
 
@@ -47,20 +45,25 @@ int adc_init(adc_t channel) {
                                    GCLK_CLKCTRL_GEN_GCLK0 |
                                    (ADC_GCLK_ID << GCLK_CLKCTRL_ID_Pos));
 
+    ADC_DEV->CTRLA.bit.SWRST = 1;
+    while(ADC_DEV->STATUS.reg & ADC_STATUS_SYNCBUSY);
 
-   ADC_DEV->CTRLA.bit.SWRST = 1;
-   while(ADC_DEV->STATUS.reg & ADC_STATUS_SYNCBUSY);
+    uint32_t bias = (*((uint32_t *) ADC_FUSES_BIASCAL_ADDR) & ADC_FUSES_BIASCAL_Msk) >> ADC_FUSES_BIASCAL_Pos;
+    uint32_t linearity = (*((uint32_t *) ADC_FUSES_LINEARITY_0_ADDR) & ADC_FUSES_LINEARITY_0_Msk) >> ADC_FUSES_LINEARITY_0_Pos;
+    linearity |= ((*((uint32_t *) ADC_FUSES_LINEARITY_1_ADDR) & ADC_FUSES_LINEARITY_1_Msk) >> ADC_FUSES_LINEARITY_1_Pos) << 5;
+
+    ADC->CALIB.reg = ADC_CALIB_BIAS_CAL(bias) | ADC_CALIB_LINEARITY_CAL(linearity);
 
     /* Set RUN_IN_STANDBY */
-    ADC_DEV->CTRLA.bit.RUNSTDBY = 1;
+    ADC_DEV->CTRLA.bit.RUNSTDBY = 0;
 
     /* Set Voltage Reference */
     ADC_DEV->REFCTRL.bit.REFSEL  = ADC_REFCTRL_REFSEL_INT1V_Val;
     ADC_DEV->REFCTRL.bit.REFCOMP = 1;
 
     /* Set the accumulation and divide result */
-    ADC_DEV->AVGCTRL.bit.SAMPLENUM = 6;
-	  ADC_DEV->AVGCTRL.bit.ADJRES    = 4;//ADC_AVGCTRL_ADJRES(divideResult) | accumulate;
+    ADC_DEV->AVGCTRL.bit.SAMPLENUM = 8;
+	  ADC_DEV->AVGCTRL.bit.ADJRES    = 0;//ADC_AVGCTRL_ADJRES(divideResult) | accumulate;
 
     /* Set Sample length */
     ADC_DEV->SAMPCTRL.bit.SAMPLEN = 32;//ADC_SAMPCTRL_SAMPLEN(ADC_0_SAMPLE_LENGTH);
@@ -69,10 +72,10 @@ int adc_init(adc_t channel) {
     /* Configure CTRLB Register HERE IS THE RESOLUTION SET!*/
     ADC_DEV->CTRLB.bit.DIFFMODE  = 0;
     ADC_DEV->CTRLB.bit.FREERUN   = 0;
-    ADC_DEV->CTRLB.bit.CORREN    = 0;
-    ADC_DEV->CTRLB.bit.LEFTADJ   = 1; // Left-adjusted results
+    ADC_DEV->CTRLB.bit.CORREN    = 1;
+    ADC_DEV->CTRLB.bit.LEFTADJ   = 0; // Left-adjusted results
     ADC_DEV->CTRLB.bit.RESSEL    = ADC_CTRLB_RESSEL_12BIT_Val;
-    ADC_DEV->CTRLB.bit.PRESCALER = ADC_CTRLB_PRESCALER_DIV512_Val;
+    ADC_DEV->CTRLB.bit.PRESCALER = ADC_CTRLB_PRESCALER_DIV256_Val;
     while(ADC_DEV->STATUS.reg & ADC_STATUS_SYNCBUSY);
 
     ADC_DEV->INPUTCTRL.bit.GAIN        = ADC_INPUTCTRL_GAIN_1X_Val;
@@ -84,10 +87,6 @@ int adc_init(adc_t channel) {
     int pin = ADC_GET_PIN(channel);
     PortGroup* pg = ADC_GET_PORT_GROUP(channel);
 
-    volatile void* t1 = (void*)pg;
-    volatile int vpin = pin;
-    printf("t1 is %x\n", (unsigned int) t1);
-    printf("pin is %d\n", vpin);
     pg->DIRCLR.reg = (1 << pin);
     pg->PINCFG[pin].bit.INEN = 1;
     pg->PINCFG[pin].bit.PMUXEN = 1;
@@ -166,11 +165,11 @@ int adc_sample(adc_t channel, adc_res_t res){
 	output = (int)ADC_DEV->RESULT.reg;
 	while(ADC_DEV->STATUS.reg & ADC_STATUS_SYNCBUSY);
 
-  //ADC_DEV->CTRLA.bit.ENABLE = 0;
+  ADC_DEV->CTRLA.bit.ENABLE = 0;
 	while(ADC_DEV->STATUS.reg & ADC_STATUS_SYNCBUSY);
 
 	/*  Disable bandgap */
-	//SYSCTRL->VREF.reg &= ~SYSCTRL_VREF_BGOUTEN;
+	SYSCTRL->VREF.reg &= ~SYSCTRL_VREF_BGOUTEN;
 
 	/* Return result. */
 	return output;
