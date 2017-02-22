@@ -23,6 +23,7 @@
 
 #include "assert.h"
 #include "periph/cpuid.h"
+#include <board.h>
 
 #include "uuid.h"
 

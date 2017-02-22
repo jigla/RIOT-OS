@@ -164,22 +164,21 @@ static const pwm_conf_t pwm_config[] = {
  * @name SPI configuration
  * @{
  */
-#define SPI_NUMOF          (1)
-#define SPI_0_EN           1
+static const spi_conf_t spi_config[] = {
+    {
+        .dev      = &SERCOM4->SPI,
+        .miso_pin = GPIO_PIN(PC, 19),
+        .mosi_pin = GPIO_PIN(PB, 30),
+        .clk_pin  = GPIO_PIN(PC, 18),
+        .miso_mux = GPIO_MUX_F,
+        .mosi_mux = GPIO_MUX_F,
+        .clk_mux  = GPIO_MUX_F,
+        .miso_pad = SPI_PAD_MISO_0,
+        .mosi_pad = SPI_PAD_MOSI_2_SCK_3
+    }
+};
 
-/*      SPI0 - radio       */
-#define SPI_0_DEV           SERCOM4->SPI
-#define SPI_IRQ_0           SERCOM4_IRQn
-#define SPI_0_GCLK_ID       SERCOM4_GCLK_ID_CORE
-/* SPI 0 pin configuration */
-#define SPI_0_SCLK          GPIO_PIN(PC, 18)
-#define SPI_0_SCLK_MUX      GPIO_MUX_F
-#define SPI_0_MISO          GPIO_PIN(PC, 19)
-#define SPI_0_MISO_MUX      GPIO_MUX_F
-#define SPI_0_MISO_PAD      SPI_PAD_MISO_0
-#define SPI_0_MOSI          GPIO_PIN(PB, 30)
-#define SPI_0_MOSI_MUX      GPIO_MUX_F
-#define SPI_0_MOSI_PAD      SPI_PAD_MOSI_2_SCK_3
+#define SPI_NUMOF           (sizeof(spi_config) / sizeof(spi_config[0]))
 /** @} */
 
 
