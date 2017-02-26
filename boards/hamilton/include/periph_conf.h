@@ -80,6 +80,18 @@ extern "C" {
 #define PM_BLOCKER_INITIAL { .val_u32=0x00000000 }
 
 /**
+ * @name Network configuration
+ * @{
+ */
+#define DUTYCYCLE_EN               (1)
+#define DUTYCYCLE_SLEEP_INTERVAL   2000000UL
+#define DUTYCYCLE_WAKEUP_INTERVAL  5000UL
+#define ROUTER    (0)        /* Plugged-in router */
+#define LEAF_NODE (1-ROUTER) /* Duty-cycling node */
+#define AUTO_CSMA_EN               (0)
+/** @} */
+
+/**
  * @name Timer peripheral configuration
  * @{
  */
