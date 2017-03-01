@@ -23,6 +23,10 @@
 #include "pm_layered.h"
 #include "board.h"
 
+#include "net/gnrc/netapi.h"
+#include "net/gnrc/netreg.h"
+#include "net/gnrc/netdev2.h"
+
 #define ENABLE_DEBUG (0)
 #include "debug.h"
 
@@ -49,10 +53,10 @@ volatile pm_blocker_t pm_blocker = PM_BLOCKER_INITIAL;
 
 void pm_set_lowest(void)
 {
-    pm_blocker_t blocker = (pm_blocker_t) pm_blocker;
+	pm_blocker_t blocker = (pm_blocker_t) pm_blocker;
     unsigned mode = PM_NUM_MODES;
     while (mode) {
-        if (blocker.val_u8[mode-1]) {
+        if (blocker.val_u8[mode]) {
             break;
         }
         mode--;
@@ -84,7 +88,8 @@ void pm_unblock(unsigned mode)
     assert(pm_blocker.val_u8[mode] > 0);
 
     unsigned state = irq_disable();
-    pm_blocker.val_u8[mode]--;
+	if (pm_blocker.val_u8[mode] > 0)
+	    pm_blocker.val_u8[mode]--;
     irq_restore(state);
 }
 

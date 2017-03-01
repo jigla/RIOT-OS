@@ -27,6 +27,7 @@
 #include "at86rf2xx_internal.h"
 #include "at86rf2xx_registers.h"
 #include "periph/spi.h"
+#include "pm_layered.h"
 
 #define ENABLE_DEBUG (0)
 #include "debug.h"
@@ -110,6 +111,7 @@ void at86rf2xx_set_addr_short(at86rf2xx_t *dev, uint16_t addr)
                         dev->netdev.short_addr[1]);
     at86rf2xx_reg_write(dev, AT86RF2XX_REG__SHORT_ADDR_1,
                         dev->netdev.short_addr[0]);
+	printf("shoart addr %2x%2x\n", dev->netdev.short_addr[0], dev->netdev.short_addr[1]);
 }
 
 uint64_t at86rf2xx_get_addr_long(at86rf2xx_t *dev)
@@ -473,6 +475,7 @@ static inline void _set_state(at86rf2xx_t *dev, uint8_t state, uint8_t cmd)
 void at86rf2xx_set_state(at86rf2xx_t *dev, uint8_t state)
 {
     uint8_t old_state = at86rf2xx_get_status(dev);
+	//uint8_t old_dev_state = dev->state;
 
     if (state == old_state) {
         return;
@@ -516,9 +519,15 @@ void at86rf2xx_set_state(at86rf2xx_t *dev, uint8_t state)
         /* Go to SLEEP mode from TRX_OFF */
         gpio_set(dev->params.sleep_pin);
         dev->state = state;
+		/* Allow CPU to go to the full sleep mode */
+		pm_unblock(PM_NUM_MODES);	
     } else {
         _set_state(dev, state, state);
+		/* Prevent CPU from going to the full sleep mode */
+		if (old_state == AT86RF2XX_STATE_SLEEP)
+			pm_block(PM_NUM_MODES);	
     }
+
     DEBUG("(%2x,%2x,%2x)\n", at86rf2xx_get_status(dev), at86rf2xx_reg_read(dev, AT86RF2XX_REG__TRX_STATUS)
             & AT86RF2XX_TRX_STATUS_MASK__TRX_STATUS, state);
 }

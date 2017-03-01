@@ -21,6 +21,7 @@
 
 #include "net/gnrc/netdev2/ieee802154.h"
 #include "byteorder.h"
+#include "board.h"
 
 #define ENABLE_DEBUG    (0)
 #include "debug.h"
@@ -54,7 +55,7 @@ static gnrc_pktsnip_t *_make_netif_hdr(uint8_t *mhr)
         return NULL;
     }
 
- 	DEBUG("[Rx packet] %u/%2x%2x(%4x)->%u/%2x%2x(%4x), flag %u, seq %u", src_len, src[0],src[1],
+    DEBUG("[Rx packet] %u/%2x%2x(%4x)->%u/%2x%2x(%4x), flag %2x, seq %u", src_len, src[0],src[1],
  			_pan_tmp_src.u16, dst_len, dst[0],dst[1], _pan_tmp_dst.u16, mhr[0], mhr[2]);
 
     /* allocate space for header */
@@ -89,10 +90,6 @@ static gnrc_pktsnip_t *_recv(gnrc_netdev2_t *gnrc_netdev2)
         }
         nread = netdev->driver->recv(netdev, pkt->data, bytes_expected, &rx_info);
         if (nread <= 0) {
-#if LEAF_NODE
- 			netopt_state_t sleepstate = NETOPT_STATE_SLEEP;
- 			netdev->driver->set(netdev, NETOPT_STATE, &sleepstate, sizeof(netopt_state_t));
- #endif
             gnrc_pktbuf_release(pkt);
             return NULL;
         }
@@ -106,10 +103,6 @@ static gnrc_pktsnip_t *_recv(gnrc_netdev2_t *gnrc_netdev2)
 
             if (mhr_len == 0) {
                 DEBUG("_recv_ieee802154: illegally formatted frame received\n");
-#if LEAF_NODE
- 				netopt_state_t sleepstate = NETOPT_STATE_SLEEP;
- 				netdev->driver->set(netdev, NETOPT_STATE, &sleepstate, sizeof(netopt_state_t));
-#endif
                 gnrc_pktbuf_release(pkt);
                 return NULL;
             }
@@ -122,14 +115,25 @@ static gnrc_pktsnip_t *_recv(gnrc_netdev2_t *gnrc_netdev2)
                 return NULL;
             }
             netif_hdr = _make_netif_hdr(ieee802154_hdr->data);
-DEBUG(", len %u/%u\n", mhr_len,nread);
- #if LEAF_NODE
- 			if (!(((uint8_t*)pkt->data)[0] & IEEE802154_FCF_FRAME_PEND)) {
- 				DEBUG("no pending\n");
- 				netopt_state_t sleepstate = NETOPT_STATE_SLEEP;
- 				netdev->driver->set(netdev, NETOPT_STATE, &sleepstate, sizeof(netopt_state_t));
- 			}
- #endif
+#if DUTYCYCLE_EN
+#if LEAF_NODE
+			/* Early sleep or additional wakeup */
+			if (((uint8_t*)ieee802154_hdr->data)[0] & IEEE802154_FCF_FRAME_PEND) {
+		        netdev->event_callback(netdev, NETDEV2_EVENT_RX_PENDING);
+			} else {
+				netopt_state_t sleepstate = NETOPT_STATE_SLEEP;
+				netdev->driver->set(netdev, NETOPT_STATE, &sleepstate, sizeof(netopt_state_t));
+			}
+#endif
+#if ROUTER
+			/* Data request command or Data */
+			if ((((uint8_t*)ieee802154_hdr->data)[0] & IEEE802154_FCF_TYPE_MASK) == 
+				IEEE802154_FCF_TYPE_MACCMD) {
+		        netdev->event_callback(netdev, NETDEV2_EVENT_RX_DATAREQ);
+			}
+#endif
+#endif
+			DEBUG(", len %u/%u\n", mhr_len,nread);
             if (netif_hdr == NULL) {
                 DEBUG("_recv_ieee802154: no space left in packet buffer\n");
                 gnrc_pktbuf_release(pkt);
@@ -206,16 +210,18 @@ static int _send(gnrc_netdev2_t *gnrc_netdev2, gnrc_pktsnip_t *pkt)
         src_len = IEEE802154_SHORT_ADDRESS_LEN;
         src = state->short_addr;
     }
-    	/* ToDo: Current version does not use a neighbor discovery protocol, which cannot support unicast.
-              We can manually set a destination (router's address) here */
- #if LEAF_NODE
- 	int16_t ddd = 0xb434;
+#if DUTYCYCLE_EN
+	/* ToDo: Current version does not use a neighbor discovery protocol, which cannot support unicast.
+          We can manually set a destination (router's address) here */
+#if LEAF_NODE
+ 	int16_t ddd = 0x166d;
  	dst = (uint8_t*)&ddd;
- #endif
- #if ROUTER
- 	int16_t ddd = 0x354e;
+#endif
+#if ROUTER
+ 	int16_t ddd = 0x1e17;
  	dst = (uint8_t*)&ddd;
- #endif
+#endif
+#endif
     /* fill MAC header, seq should be set by device */
     if ((res = ieee802154_set_frame_hdr(mhr, src, src_len,
                                         dst, dst_len, dev_pan,
@@ -223,8 +229,8 @@ static int _send(gnrc_netdev2_t *gnrc_netdev2, gnrc_pktsnip_t *pkt)
         DEBUG("_send_ieee802154: Error preperaring frame\n");
         return -EINVAL;
     }
-    	DEBUG("[Tx Data] %u/%2x%2x->%u/%2x%2x, flag %2x, seq %u\n", src_len, src[0],src[1], dst_len,
- 			dst[0],dst[1], flags, state->seq-1);
+	DEBUG("[Tx Data] %u/%2x%2x->%u/%2x%2x, flag %2x, seq %u\n", src_len, src[0],src[1], dst_len,
+		dst[0],dst[1], flags, state->seq-1);
 
     /* prepare packet for sending */
     vec_snip = gnrc_pktbuf_get_iovec(pkt, &n);
@@ -264,28 +270,20 @@ static int _send(gnrc_netdev2_t *gnrc_netdev2, gnrc_pktsnip_t *pkt)
      int res = 0;
      size_t src_len, dst_len;
      uint8_t mhr[IEEE802154_MAX_HDR_LEN+1];
- 	uint8_t command_id = 4; /* Data request commnad ID */
+ 	 uint8_t command_id = 4; /* Data request commnad ID */
      uint8_t flags = (uint8_t)(state->flags & NETDEV2_IEEE802154_SEND_MASK);
      le_uint16_t dev_pan = byteorder_btols(byteorder_htons(state->pan));
 
      flags |= (IEEE802154_FCF_ACK_REQ | IEEE802154_FCF_TYPE_MACCMD);
 
- 	/* ToDo: Current version does not use a neighbor discovery protocol, which cannot support unicast.
-              We can manually set a destination (router's address) here */
- 	int16_t ddd = 0xb434;
- 	dst = (uint8_t*)&ddd;
-     dst_len = IEEE802154_SHORT_ADDRESS_LEN;
-     //dst = ieee802154_addr_bcast;
-     //dst_len = IEEE802154_ADDR_BCAST_LEN;
+     src_len = IEEE802154_SHORT_ADDRESS_LEN;
+     src = state->short_addr;
 
-     if (state->flags & NETDEV2_IEEE802154_SRC_MODE_LONG) {
-         src_len = IEEE802154_LONG_ADDRESS_LEN;
-         src = state->long_addr;
-     }
-     else {
-         src_len = IEEE802154_SHORT_ADDRESS_LEN;
-         src = state->short_addr;
-     }
+ 	 /* ToDo: Current version does not use a neighbor discovery protocol, which cannot support unicast.
+              We can manually set a destination (router's address) here */
+     dst_len = IEEE802154_SHORT_ADDRESS_LEN;
+ 	 int16_t ddd = 0x166d;;
+ 	 dst = (uint8_t*)&ddd;
 
      /* fill MAC header, seq should be set by device */
      if ((res = ieee802154_set_frame_hdr(mhr, src, src_len,
@@ -296,7 +294,7 @@ static int _send(gnrc_netdev2_t *gnrc_netdev2, gnrc_pktsnip_t *pkt)
      }
  	mhr[res++] = command_id; /* MAC command ID: Data Request */
 
- 	//printf("[Tx DataReq] %u/%2x%2x->%u/%2x%2x, flag %2x, seq %u\n", src_len, src[0],src[1], dst_len, dst[0],dst[1], flags, state->seq-1);
+ 	DEBUG("[Tx DataReq] %u/%2x%2x->%u/%2x%2x, flag %2x, seq %u\n", src_len, src[0],src[1], dst_len, dst[0],dst[1], flags, state->seq-1);
 
      /* prepare packet for sending */
      vector.iov_base = mhr;

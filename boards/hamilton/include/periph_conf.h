@@ -15,7 +15,7 @@
  * @brief       Configuration of CPU peripherals for the Hamilton mote
  *
  * @author      Michael Andersen <m.andersen@berkeley.edu>
- * @author      Hyun Sin Kim <hs.kim@berkeley.edu>
+ * @author      Hyung-Sin Kim <hs.kim@berkeley.edu>
  */
 
 #ifndef PERIPH_CONF_H_
@@ -84,9 +84,14 @@ extern "C" {
  * @{
  */
 #define DUTYCYCLE_EN               (1)
-#define DUTYCYCLE_SLEEP_INTERVAL   2000000UL
-#define DUTYCYCLE_WAKEUP_INTERVAL  5000UL
-#define ROUTER    (0)        /* Plugged-in router */
+#define DUTYCYCLE_WAKEUP_INTERVAL  6000UL    /* Don't change it w/o particular reasons */
+#define DUTYCYCLE_SLEEP_INTERVAL   2000000UL /* 1) When it is ZERO, a leaf node does not send beacons,
+												(i.e., extremely low duty-cycle, 
+                                                       but downlink transmission is disabled) 
+                                                2) Router and leaf node should have same sleep interval. 
+												   Router does not sleep 
+												   but uses the value for downlink transmissions */
+#define ROUTER    (1)        /* Plugged-in router */
 #define LEAF_NODE (1-ROUTER) /* Duty-cycling node */
 #define AUTO_CSMA_EN               (0)
 /** @} */

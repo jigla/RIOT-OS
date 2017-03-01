@@ -367,13 +367,6 @@ static int _set(netdev2_t *netdev, netopt_t opt, void *val, size_t len)
     }
 
     switch (opt) {
-        case NETOPT_STATE:
-             if (len > sizeof(netopt_state_t)) {
-                 res = -EOVERFLOW;
-             } else {
-                 res = _set_state(dev, *((netopt_state_t *)val));
-             }
-             break;
         case NETOPT_ADDRESS:
             assert(len <= sizeof(uint16_t));
             at86rf2xx_set_addr_short(dev, *((uint16_t *)val));
@@ -583,6 +576,13 @@ static void _isr(netdev2_t *netdev)
              * there are none */
             assert(dev->pending_tx != 0);
             if ((--dev->pending_tx) == 0) {
+#if DUTYCYCLE_EN
+#if LEAF_NODE
+				if (trac_status == AT86RF2XX_TRX_STATE__TRAC_SUCCESS_DATA_PENDING) {
+	                dev->idle_state = AT86RF2XX_STATE_RX_AACK_ON;		
+				}
+#endif
+#endif
                 at86rf2xx_set_state(dev, dev->idle_state);
                 DEBUG("[at86rf2xx] return to state 0x%x\n", dev->idle_state);
             }
