@@ -23,10 +23,6 @@
 #include "pm_layered.h"
 #include "board.h"
 
-#include "net/gnrc/netapi.h"
-#include "net/gnrc/netreg.h"
-#include "net/gnrc/netdev2.h"
-
 #define ENABLE_DEBUG (0)
 #include "debug.h"
 

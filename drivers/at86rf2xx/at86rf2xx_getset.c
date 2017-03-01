@@ -111,7 +111,6 @@ void at86rf2xx_set_addr_short(at86rf2xx_t *dev, uint16_t addr)
                         dev->netdev.short_addr[1]);
     at86rf2xx_reg_write(dev, AT86RF2XX_REG__SHORT_ADDR_1,
                         dev->netdev.short_addr[0]);
-	printf("shoart addr %2x%2x\n", dev->netdev.short_addr[0], dev->netdev.short_addr[1]);
 }
 
 uint64_t at86rf2xx_get_addr_long(at86rf2xx_t *dev)
@@ -475,7 +474,6 @@ static inline void _set_state(at86rf2xx_t *dev, uint8_t state, uint8_t cmd)
 void at86rf2xx_set_state(at86rf2xx_t *dev, uint8_t state)
 {
     uint8_t old_state = at86rf2xx_get_status(dev);
-	//uint8_t old_dev_state = dev->state;
 
     if (state == old_state) {
         return;
