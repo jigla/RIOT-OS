@@ -87,15 +87,6 @@ void at86rf2xx_reset(at86rf2xx_t *dev)
     at86rf2xx_set_option(dev, AT86RF2XX_OPT_TELL_TX_END, true);
 #endif
 
-
-/* AUTO_CSMA */
-#if AUTO_CSMA_EN
-    at86rf2xx_set_option(dev, AT86RF2XX_OPT_CSMA, true);
-#else
-    at86rf2xx_set_option(dev, AT86RF2XX_OPT_CSMA, false);
-#endif
-
-
     /* set default protocol */
 #ifdef MODULE_GNRC_SIXLOWPAN
     dev->netdev.proto = GNRC_NETTYPE_SIXLOWPAN;
@@ -121,16 +112,21 @@ void at86rf2xx_reset(at86rf2xx_t *dev)
     tmp |= (AT86RF2XX_TRX_CTRL_0_CLKM_CTRL__OFF);
     at86rf2xx_reg_write(dev, AT86RF2XX_REG__TRX_CTRL_0, tmp);
 
+	/* AUTO_CSMA */
+#if AUTO_CSMA_EN
+    at86rf2xx_set_option(dev, AT86RF2XX_OPT_CSMA, true);
+#else
+    at86rf2xx_set_option(dev, AT86RF2XX_OPT_CSMA, false);				
+	/* CCA setting for manual CSMA */
+	tmp = at86rf2xx_reg_read(dev, AT86RF2XX_REG__PHY_CC_CCA);
+	tmp |= AT86RF2XX_PHY_CC_CCA_DEFAULT__CCA_MODE;
+	at86rf2xx_reg_write(dev, AT86RF2XX_REG__PHY_CC_CCA, tmp);
+#endif
+
     /* enable interrupts */
     at86rf2xx_reg_write(dev, AT86RF2XX_REG__IRQ_MASK,
                         AT86RF2XX_IRQ_STATUS_MASK__TRX_END);
-
     at86rf2xx_set_option(dev, AT86RF2XX_OPT_ACK_PENDING, true);
-
-    /* CCA setting */
-    tmp = at86rf2xx_reg_read(dev, AT86RF2XX_REG__PHY_CC_CCA);
-    tmp |= AT86RF2XX_PHY_CC_CCA_DEFAULT__CCA_MODE;
-    at86rf2xx_reg_write(dev, AT86RF2XX_REG__PHY_CC_CCA, tmp);
 
     /* clear interrupt flags */
     at86rf2xx_reg_read(dev, AT86RF2XX_REG__IRQ_STATUS);
@@ -165,12 +161,7 @@ void at86rf2xx_tx_prepare(at86rf2xx_t *dev)
     } while (state == AT86RF2XX_STATE_BUSY_RX_AACK ||
              state == AT86RF2XX_STATE_BUSY_TX_ARET);
     if (state != AT86RF2XX_STATE_TX_ARET_ON) {
-#if DUTYCYCLE_EN
-		  /* For dutycycling, the radio will go to RX mode after sending a packet */
-		  dev->idle_state = AT86RF2XX_STATE_RX_AACK_ON;
-#else
-      dev->idle_state = state;
-#endif
+	    dev->idle_state = state;
     }
     at86rf2xx_set_state(dev, AT86RF2XX_STATE_TX_ARET_ON);
     dev->tx_frame_len = IEEE802154_FCS_LEN;
@@ -182,6 +173,32 @@ size_t at86rf2xx_tx_load(at86rf2xx_t *dev, uint8_t *data,
     dev->tx_frame_len += (uint8_t)len;
     at86rf2xx_sram_write(dev, offset + 1, data, len);
     return offset + len;
+}
+
+/* This CCA is needed for manual CSMA */
+bool at86rf2xx_cca(at86rf2xx_t *dev)
+{
+    uint8_t tmp;
+    uint8_t status;
+
+    at86rf2xx_assert_awake(dev);
+
+    /* trigger CCA measurment */
+    tmp = at86rf2xx_reg_read(dev, AT86RF2XX_REG__PHY_CC_CCA);
+    tmp |= AT86RF2XX_PHY_CC_CCA_MASK__CCA_REQUEST;
+    at86rf2xx_reg_write(dev, AT86RF2XX_REG__PHY_CC_CCA, tmp);
+
+    /* wait for result to be ready */
+    do {
+        status = at86rf2xx_reg_read(dev, AT86RF2XX_REG__TRX_STATUS);
+    } while (!(status & AT86RF2XX_TRX_STATUS_MASK__CCA_DONE));
+    /* return according to measurement */
+    if (status & AT86RF2XX_TRX_STATUS_MASK__CCA_STATUS) {
+        return true;
+    }
+    else {
+        return false;
+    }
 }
 
 void at86rf2xx_tx_exec(at86rf2xx_t *dev)

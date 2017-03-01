@@ -224,22 +224,6 @@ static inline void gnrc_netdev2_set_tx_feedback(gnrc_netdev2_t *dev,
 #endif
 
 #if DUTYCYCLE_EN
-typedef enum {
-	DUTY_INIT,
-	DUTY_SLEEP,
-	DUTY_TX_BEACON,
-	DUTY_TX_DATA,
-	DUTY_LISTEN,
-} dutycycle_state_t;
-
-typedef struct {
-	uint16_t addr;
-	uint16_t dutycycle;
-	int8_t rssi;
-	uint8_t lqi;
-	uint8_t etx;
-} link_neighbor_table_t;
-
 /**
   * @brief Initialize GNRC netdev2 handler thread for dutycycling
   *

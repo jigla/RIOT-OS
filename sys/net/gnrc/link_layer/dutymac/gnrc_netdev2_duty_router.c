@@ -50,6 +50,13 @@
 #define NETDEV2_PKT_QUEUE_SIZE 4
 
 #define NEIGHBOR_TABLE_SIZE 10
+typedef struct {
+	uint16_t addr;
+	uint16_t dutycycle;
+	int8_t rssi;
+	uint8_t lqi;
+	uint8_t etx;
+} link_neighbor_table_t;
 link_neighbor_table_t neighbor_table[NEIGHBOR_TABLE_SIZE];
 uint8_t neighbor_num = 0;
 
@@ -60,7 +67,7 @@ static void _pass_on_packet(gnrc_pktsnip_t *pkt);
  *     a router does not discard a broadcasting packet during a sleep interval
  */
 xtimer_t timer;
-uint8_t broadcasting = 0;
+bool broadcasting = 0;
 uint8_t pending_num = 0;
 uint8_t broadcasting_num = 0;
 uint8_t sending_pkt_key = 0xFF;
@@ -72,10 +79,13 @@ uint8_t sending_pkt_key = 0xFF;
 uint16_t recent_dst_l2addr = 0;
 
 /* A packet can be sent only when radio_busy = 0 */
-uint8_t radio_busy = 0;
+bool radio_busy = false;
 
 /* This is the packet being sent by the radio now */
 gnrc_pktsnip_t *current_pkt;
+
+/* Rx data request command from a leaf node: I can send data to the leaf node */
+bool rx_data_request = false;
 
 // Exhaustive search version
 int msg_queue_add(msg_t* msg_queue, msg_t* msg) {
@@ -101,7 +111,7 @@ int msg_queue_add(msg_t* msg_queue, msg_t* msg) {
 			  */
 			if (broadcasting_num == 0) {
 				xtimer_set(&timer, DUTYCYCLE_SLEEP_INTERVAL+100);
-				broadcasting = 1;
+				broadcasting = true;
 				sending_pkt_key = 0;
 				printf("broadcast starts\n");
 			}
@@ -153,7 +163,7 @@ void msg_queue_remove(msg_t* msg_queue) {
 		  */
 		if (broadcasting_num > 0) {
 			xtimer_set(&timer, DUTYCYCLE_SLEEP_INTERVAL+100);
-			broadcasting = 1;
+			broadcasting = true;
 			sending_pkt_key = 0;
 			printf("broadcast starts\n");
 			return;
@@ -209,7 +219,7 @@ void msg_queue_send(msg_t* msg_queue, uint16_t dst_l2addr, gnrc_netdev2_t* gnrc_
 			p1 = p1->next;
 			temp_pkt = temp_pkt->next;
 		}
-		radio_busy = 1; /* radio is now busy */
+		radio_busy = true; /* radio is now busy */
 		gnrc_dutymac_netdev2->send(gnrc_dutymac_netdev2, current_pkt);
 	}
 }
@@ -223,7 +233,7 @@ void broadcast_cb(void* arg) {
 	gnrc_netdev2_t* gnrc_dutymac_netdev2 = (gnrc_netdev2_t*) arg;
     msg_t msg;
 	/* Broadcasting msg maintenance for routers */
-	broadcasting = 0;
+	broadcasting = false;
 	broadcasting_num--;
 	printf("braodcast ends\n");
 	msg.type = GNRC_NETDEV2_DUTYCYCLE_MSG_TYPE_REMOVE_QUEUE;
@@ -268,12 +278,17 @@ static void _event_cb(netdev2_t *dev, netdev2_event_t event)
             puts("gnrc_netdev2: possibly lost interrupt.");
         }
     }
+	else if (event == NETDEV2_EVENT_RX_DATAREQ) {
+		rx_data_request = true;
+	}
     else {
         DEBUG("gnrc_netdev2: event triggered -> %i\n", event);
         switch(event) {
             case NETDEV2_EVENT_RX_COMPLETE:
                 {
                     gnrc_pktsnip_t *pkt = gnrc_dutymac_netdev2->recv(gnrc_dutymac_netdev2);
+
+					/* Extract src addr and update neighbor table */
 					gnrc_pktsnip_t *temp_pkt = pkt;
 					while (temp_pkt->next) { temp_pkt = temp_pkt->next; }
 					gnrc_netif_hdr_t *hdr = temp_pkt->data;
@@ -284,11 +299,16 @@ static void _event_cb(netdev2_t *dev, netdev2_event_t event)
 					} else {
 						src_l2addr = (*src_addr << 8| (*(src_addr+1)));
 					}
-					msg_t msg;
-					msg.type = GNRC_NETDEV2_DUTYCYCLE_MSG_TYPE_SND;
-					msg.content.ptr = &src_l2addr;
-					msg_send(&msg, gnrc_dutymac_netdev2->pid);
 					neighbor_table_update(src_l2addr, hdr);
+
+					/* Send packets when receiving a data req from a leaf node */
+					if (rx_data_request & pending_num) {
+						rx_data_request = false;
+						msg_t msg;
+						msg.type = GNRC_NETDEV2_DUTYCYCLE_MSG_TYPE_SND;
+						msg.content.ptr = &src_l2addr;
+						msg_send(&msg, gnrc_dutymac_netdev2->pid);
+					}
 
 				    if (pkt) {
                         _pass_on_packet(pkt);
@@ -304,18 +324,22 @@ static void _event_cb(netdev2_t *dev, netdev2_event_t event)
 #ifdef MODULE_NETSTATS_L2
          	    dev->stats.tx_success++;
 #endif
-				radio_busy = 0; /* radio is free now */
+				radio_busy = false; /* radio is free now */
 				/* Remove only unicasting packets, broadcasting packets are removed by timer expires */
-				if (!broadcasting) {
+				if (broadcasting) {
+					recent_dst_l2addr = 0xffff;
+				} else {
 					msg_t msg;
 					msg.type = GNRC_NETDEV2_DUTYCYCLE_MSG_TYPE_REMOVE_QUEUE;
 					msg_send(&msg, gnrc_dutymac_netdev2->pid);
 				}
 			    break;
 			case NETDEV2_EVENT_TX_NOACK:
-				radio_busy = 0; /* radio is free now */
+				radio_busy = false; /* radio is free now */
 				/* Remove only unicasting packets, broadcasting packets are removed by timer expires */
-				if (!broadcasting) {
+				if (broadcasting) {
+					recent_dst_l2addr = 0xffff;
+				} else {
 					msg_t msg;
 					msg.type = GNRC_NETDEV2_DUTYCYCLE_MSG_TYPE_REMOVE_QUEUE;
 					msg_send(&msg, gnrc_dutymac_netdev2->pid);
@@ -390,7 +414,6 @@ static void *_gnrc_netdev2_duty_thread(void *args)
 	netopt_state_t sleepstate = NETOPT_STATE_IDLE;
     dev->driver->set(dev, NETOPT_STATE, &sleepstate, sizeof(netopt_state_t));
 
-
     /* start the event loop */
     while (1) {
         DEBUG("gnrc_netdev2: waiting for incoming messages\n");
@@ -400,18 +423,19 @@ static void *_gnrc_netdev2_duty_thread(void *args)
         switch (msg.type) {
 			case GNRC_NETDEV2_DUTYCYCLE_MSG_TYPE_SND:
 				/* Send a packet in the packet queue if its destination matches to the input address */
-				if (pending_num && !radio_busy)
+				if (pending_num && !radio_busy) {
 					msg_queue_send(pkt_queue, *((uint16_t*)msg.content.ptr), gnrc_dutymac_netdev2);
+				}
 				break;
 			case GNRC_NETDEV2_DUTYCYCLE_MSG_TYPE_REMOVE_QUEUE:
 				/* Remove a packet from the packet queue */
-				msg_queue_remove(pkt_queue);
+				msg_queue_remove(pkt_queue);	
 				/* Send a packet in the packet queue */
-				if (pending_num && !radio_busy) {
+				/* */
+				if (pending_num && !radio_busy && recent_dst_l2addr != 0xffff) {
 					/* Send a packet to the same destination */
 					msg_queue_send(pkt_queue, recent_dst_l2addr, gnrc_dutymac_netdev2);
-				}
-				if (!pending_num) {
+				} else if (!pending_num) {
 					bool pending = false;
                 	dev->driver->set(dev, NETOPT_ACK_PENDING, &pending, sizeof(bool));
 				}
@@ -422,6 +446,8 @@ static void *_gnrc_netdev2_duty_thread(void *args)
                 break;
             case GNRC_NETAPI_MSG_TYPE_SND:
                 DEBUG("gnrc_netdev2: GNRC_NETAPI_MSG_TYPE_SND received\n");
+				/* ToDo: We need to distingush sending operation according to the destination 
+						characteristisc: duty-cycling or always-on */
 				/* Queue a packet */
 				if (msg_queue_add(pkt_queue, &msg)) {
 					/* If a packet exists, send ACKs with pending bit */
