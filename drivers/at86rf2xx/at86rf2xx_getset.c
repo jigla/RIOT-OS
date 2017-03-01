@@ -518,12 +518,12 @@ void at86rf2xx_set_state(at86rf2xx_t *dev, uint8_t state)
         gpio_set(dev->params.sleep_pin);
         dev->state = state;
 		/* Allow CPU to go to the full sleep mode */
-		pm_unblock(PM_NUM_MODES);	
+		pm_unblock(PM_NUM_MODES-1);	
     } else {
         _set_state(dev, state, state);
 		/* Prevent CPU from going to the full sleep mode */
 		if (old_state == AT86RF2XX_STATE_SLEEP)
-			pm_block(PM_NUM_MODES);	
+			pm_block(PM_NUM_MODES-1);	
     }
 
     DEBUG("(%2x,%2x,%2x)\n", at86rf2xx_get_status(dev), at86rf2xx_reg_read(dev, AT86RF2XX_REG__TRX_STATUS)

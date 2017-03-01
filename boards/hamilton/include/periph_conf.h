@@ -91,7 +91,7 @@ extern "C" {
                                                 2) Router and leaf node should have same sleep interval. 
 												   Router does not sleep 
 												   but uses the value for downlink transmissions */
-#define ROUTER    (1)        /* Plugged-in router */
+#define ROUTER    (0)        /* Plugged-in router */
 #define LEAF_NODE (1-ROUTER) /* Duty-cycling node */
 #define AUTO_CSMA_EN               (0)
 /** @} */
