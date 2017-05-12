@@ -303,6 +303,10 @@ void auto_init(void)
     extern void auto_init_hdc1000(void);
     auto_init_hdc1000();
 #endif
+#ifdef MODULE_TMP006
+    extern void auto_init_tmp006(void);
+    auto_init_tmp006();
+#endif
 #ifdef MODULE_DHT
     extern void auto_init_dht(void);
     auto_init_dht();

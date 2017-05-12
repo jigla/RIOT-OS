@@ -39,6 +39,7 @@ const char *saul_class_to_str(uint8_t class_id)
         case SAUL_SENSE_ANY:    return "SENSE_ANY";
         case SAUL_SENSE_BTN:    return "SENSE_BTN";
         case SAUL_SENSE_TEMP:   return "SENSE_TEMP";
+        case SAUL_SENSE_RAD_TEMP:   return "SENSE_RAD_TEMP";
         case SAUL_SENSE_HUM:    return "SENSE_HUM";
         case SAUL_SENSE_LIGHT:  return "SENSE_LIGHT";
         case SAUL_SENSE_ACCEL:  return "SENSE_ACCEL";
